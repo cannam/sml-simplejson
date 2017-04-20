@@ -3,8 +3,7 @@
 
    Notes:
 
-   * Code size is more important here than performance, and this is
-     neither particularly fast nor suitable for very large files
+   * Not suitable for large input files
 
    * We only support UTF-8 input, but we don't check that JSON strings
      contain valid UTF-8 and we don't expand \u escapes (our one
@@ -98,7 +97,7 @@ structure JsonParser :> JSON_PARSER = struct
                 if escaped
                 then error pos "End of input during escape sequence"
                 else error pos "End of input during string"
-              | lexString' pos text escaped (x::xs) =
+              | lexString' pos text escaped (x :: xs) =
                 if escaped
                 then
                     let fun esc c = lexString' (pos + 1) (c :: text) false xs
@@ -115,17 +114,29 @@ structure JsonParser :> JSON_PARSER = struct
                                                Char.toString x)
                     end
                 else case x of
-                         #"\"" => OK (rev text, xs)
+                         #"\"" => OK (rev text, xs, pos + 1)
                        | #"\\" => lexString' (pos + 1) text true xs
                        | _     => lexString' (pos + 1) (x :: text) false xs
         in
             case lexString' pos [] false cc of
-                OK (text, rest) =>
-                lex (pos + 1) (T.STRING (implode text) :: acc) rest
+                OK (text, rest, newpos) =>
+                lex newpos (T.STRING (implode text) :: acc) rest
               | ERROR e => ERROR e
         end
             
-    and lexNumber firstChar pos acc cc = error pos "lexNumber not implemented"
+    and lexNumber firstChar pos acc cc =
+        let val valid = explode ".+-e"
+            fun lexNumber' pos digits [] = (rev digits, [], pos)
+              | lexNumber' pos digits (x :: xs) =
+                if Char.isDigit x orelse List.exists (fn c => x = c) valid
+                then lexNumber' (pos + 1) (x :: digits) xs
+                else (rev digits, x :: xs, pos)
+            val (digits, rest, newpos) = lexNumber' pos [] (firstChar :: cc)
+        in
+            case Real.fromString (implode digits) of
+                NONE => error pos "Invalid number"
+              | SOME r => lex newpos (T.NUMBER r :: acc) rest
+        end
                                            
     and lex pos acc [] = OK (rev acc)
       | lex pos acc (x::xs) = 
@@ -146,34 +157,52 @@ structure JsonParser :> JSON_PARSER = struct
            | #"n"  => lexNull
            | x     => lexNumber x) (pos + 1) acc xs
 
-    fun show [] = " end of input"
-      | show (tok::_) = T.toString tok
-        
-    fun parseObject acc [] = ERROR "Object contents expected"
-      | parseObject acc (T.CURLY_R :: rest) = OK (OBJECT acc, rest)
-      | parseObject acc (tok :: rest) = ERROR "parseObject not implemented"
+    fun show [] = "end of input"
+      | show (tok :: _) = T.toString tok
 
-    and parseArray acc [] = ERROR "Array contents expected"
-      | parseArray acc (T.SQUARE_R :: rest) = OK (ARRAY (rev acc), rest)
-      | parseArray acc tokens =
-        case parseTokens tokens of
-            ERROR e => ERROR e
-          | OK (json, T.COMMA :: rest) => parseArray (json :: acc) rest
-          | OK (json, T.SQUARE_R :: rest) => OK (ARRAY (rev (json :: acc)),
-                                                 rest)
-          | OK (_, _) => ERROR "Expected , or ] after array element"
+    fun parseObject (T.CURLY_R :: xs) = OK (OBJECT [], xs)
+      | parseObject tokens =
+        let fun parsePair (T.STRING label :: T.COLON :: xs) =
+                (case parseTokens xs of
+                     ERROR e => ERROR e
+                   | OK (j, xs) => OK ((label, j), xs))
+              | parsePair other =
+                ERROR ("Object name/value pair expected before " ^ show other)
+            fun parseObject' acc [] = ERROR "End of input during object"
+              | parseObject' acc tokens =
+                case parsePair tokens of
+                    ERROR e => ERROR e
+                  | OK (pair, T.COMMA :: xs) => parseObject' (pair :: acc) xs
+                  | OK (pair, T.CURLY_R :: xs) => OK (OBJECT (pair :: acc), xs)
+                  | OK (_, _) => ERROR "Expected , or } after object element"
+        in
+            parseObject' [] tokens
+        end
+
+    and parseArray (T.SQUARE_R :: xs) = OK (ARRAY [], xs)
+      | parseArray tokens =
+        let fun parseArray' acc [] = ERROR "End of input during array"
+              | parseArray' acc tokens =
+                case parseTokens tokens of
+                    ERROR e => ERROR e
+                  | OK (j, T.COMMA :: xs) => parseArray' (j :: acc) xs
+                  | OK (j, T.SQUARE_R :: xs) => OK (ARRAY (rev (j :: acc)), xs)
+                  | OK (_, _) => ERROR "Expected , or ] after array element"
+        in
+            parseArray' [] tokens
+        end
 
     and parseTokens [] = ERROR "Value expected"
-      | parseTokens (tok::rest) =
+      | parseTokens (tok :: xs) =
         (case tok of
-             T.NUMBER r => OK (NUMBER r, rest)
-           | T.STRING s => OK (STRING s, rest)
-           | T.BOOL b   => OK (BOOL b, rest)
-           | T.NULL     => OK (NULL, rest)
-           | T.CURLY_L  => parseObject [] rest
-           | T.SQUARE_L => parseArray [] rest
-           | _ => ERROR ("Unexpected token " ^ (T.toString tok) ^ " before " ^
-                         (show rest)))
+             T.NUMBER r => OK (NUMBER r, xs)
+           | T.STRING s => OK (STRING s, xs)
+           | T.BOOL b   => OK (BOOL b, xs)
+           | T.NULL     => OK (NULL, xs)
+           | T.CURLY_L  => parseObject xs
+           | T.SQUARE_L => parseArray xs
+           | _ => ERROR ("Unexpected token " ^ T.toString tok ^
+                         " before " ^ show xs))
                                    
     fun parse str =
         case lex 1 [] (explode str) of
@@ -184,7 +213,4 @@ structure JsonParser :> JSON_PARSER = struct
                           | ERROR e => ERROR e
 
 end
-
-(* val test = JsonParser.parse "{\n    \"id\": \"http://vamp-plugins.org/piper/json/schema/loadrequest#\",\n    \"$schema\": \"http://json-schema.org/draft-04/schema#\",\n    \"description\": \"schema for a request to load a feature extractor; may be served in the params field of a load-method rpcrequest\",\n    \"type\": \"object\",\n    \"properties\": {\n	\"key\": {\n	    \"type\": \"string\"\n	},\n	\"inputSampleRate\": {\n	    \"type\": \"number\"\n	},\n	\"adapterFlags\": {\n	    \"type\": \"array\",\n	    \"items\": {\n		\"$ref\": \"http://vamp-plugins.org/piper/json/schema/enums#/definitions/adapter_flags\"\n	    }\n	}\n    },\n    \"required\": [ \"key\", \"inputSampleRate\" ],\n    \"additionalProperties\": false\n}" *)
-
 
