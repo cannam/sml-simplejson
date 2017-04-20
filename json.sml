@@ -1,5 +1,6 @@
-(* An almost-RFC-compliant minimal JSON parser with no dependency on
-   anything outside the Basis library.
+(*
+   An almost-RFC-compliant minimal JSON parser/serialiser with no
+   dependency on anything outside the Basis library.
 
    Notes:
 
@@ -20,7 +21,7 @@
    Interchange Format.
 *)
 
-signature JSON_PARSER = sig
+signature JSON = sig
 
     datatype json = OBJECT of (string * json) list
                   | ARRAY of json list
@@ -33,10 +34,11 @@ signature JSON_PARSER = sig
                        | ERROR of string
 
     val parse : string -> json result
+    val serialise : json -> string
 
 end
 
-structure JsonParser :> JSON_PARSER = struct
+structure Json :> JSON = struct
 
     datatype json = OBJECT of (string * json) list
                   | ARRAY of json list
@@ -123,7 +125,8 @@ structure JsonParser :> JSON_PARSER = struct
                 lex newpos (T.STRING (implode text) :: acc) rest
               | ERROR e => ERROR e
         end
-            
+
+    (*!!! todo: this erroneously accepts ~ for negative in the SML style *)
     and lexNumber firstChar pos acc cc =
         let val valid = explode ".+-e"
             fun lexNumber' pos digits [] = (rev digits, [], pos)
@@ -162,12 +165,12 @@ structure JsonParser :> JSON_PARSER = struct
 
     fun parseObject (T.CURLY_R :: xs) = OK (OBJECT [], xs)
       | parseObject tokens =
-        let fun parsePair (T.STRING label :: T.COLON :: xs) =
+        let fun parsePair (T.STRING key :: T.COLON :: xs) =
                 (case parseTokens xs of
                      ERROR e => ERROR e
-                   | OK (j, xs) => OK ((label, j), xs))
+                   | OK (j, xs) => OK ((key, j), xs))
               | parsePair other =
-                ERROR ("Object name/value pair expected before " ^ show other)
+                ERROR ("Object key/value pair expected before " ^ show other)
             fun parseObject' acc [] = ERROR "End of input during object"
               | parseObject' acc tokens =
                 case parsePair tokens of
@@ -212,5 +215,34 @@ structure JsonParser :> JSON_PARSER = struct
                           | OK (_, _) => ERROR "Extra data after input"
                           | ERROR e => ERROR e
 
+    fun stringEscape s =
+        let fun esc x = [x, #"\\"]
+            fun escape' acc [] = rev acc
+              | escape' acc (x :: xs) = escape' (case x of
+                                                     #"\"" => esc x @ acc
+                                                   | #"\\" => esc x @ acc
+                                                   | #"\b" => esc #"b" @ acc
+                                                   | #"\f" => esc #"f" @ acc
+                                                   | #"\n" => esc #"n" @ acc
+                                                   | #"\r" => esc #"r" @ acc
+                                                   | #"\t" => esc #"t" @ acc
+                                                   | _ => x :: acc) xs
+        in
+            implode (escape' [] (explode s))
+        end
+        
+    fun serialise json =
+        case json of
+            OBJECT pp => "{" ^ String.concatWith
+                                   "," (map (fn (key, value) =>
+                                                serialise (STRING key) ^ ":" ^
+                                                serialise value) pp) ^
+                         "}"
+          | ARRAY arr => "[" ^ String.concatWith "," (map serialise arr) ^ "]"
+          | NUMBER n => Real.toString n
+          | STRING s => "\"" ^ stringEscape s ^ "\""
+          | BOOL b => Bool.toString b
+          | NULL => "null"
+                                             
 end
 
