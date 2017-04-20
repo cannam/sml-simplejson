@@ -1,3 +1,5 @@
 
-json:	json.sml
-	../sml-buildscripts/polybuild $<
+test:	test.mlb
+	mlton $<
+	./test.sh
+
