@@ -50,7 +50,7 @@ structure Json :> JSON = struct
                        | ERROR of string
 
     structure T = struct
-        datatype token = NUMBER of real
+        datatype token = NUMBER of char list
                        | STRING of string
                        | BOOL of bool
                        | NULL
@@ -62,7 +62,7 @@ structure Json :> JSON = struct
                        | COMMA
 
         fun toString t =
-            case t of NUMBER r => Real.toString r
+            case t of NUMBER digits => implode digits
                     | STRING s => s
                     | BOOL b => Bool.toString b
                     | NULL => "null"
@@ -162,9 +162,9 @@ structure Json :> JSON = struct
                 else (rev digits, x :: xs, pos)
             val (digits, rest, newpos) = lexNumber' pos [] (firstChar :: cc)
         in
-            case Real.fromString (implode digits) of
-                NONE => error pos "Invalid number"
-              | SOME r => lex newpos (T.NUMBER r :: acc) rest
+            case digits of
+                [] => error pos "Unexpected token"
+              | _ => lex newpos (T.NUMBER digits :: acc) rest
         end
                                            
     and lex pos acc [] = OK (rev acc)
@@ -189,6 +189,11 @@ structure Json :> JSON = struct
     fun show [] = "end of input"
       | show (tok :: _) = T.toString tok
 
+    fun parseNumber digits =
+        case Real.fromString (implode digits) of
+            NONE => ERROR "Invalid number"
+          | SOME r => OK r
+                                     
     fun parseObject (T.CURLY_R :: xs) = OK (OBJECT [], xs)
       | parseObject tokens =
         let fun parsePair (T.STRING key :: T.COLON :: xs) =
@@ -224,7 +229,9 @@ structure Json :> JSON = struct
     and parseTokens [] = ERROR "Value expected"
       | parseTokens (tok :: xs) =
         (case tok of
-             T.NUMBER r => OK (NUMBER r, xs)
+             T.NUMBER d => (case parseNumber d of
+                                OK r => OK (NUMBER r, xs)
+                              | ERROR e => ERROR e)
            | T.STRING s => OK (STRING s, xs)
            | T.BOOL b   => OK (BOOL b, xs)
            | T.NULL     => OK (NULL, xs)
