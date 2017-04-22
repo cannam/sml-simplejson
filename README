@@ -29,6 +29,6 @@ Parser notes:
    standard for a JSON parser
 
 Copyright 2017 Chris Cannam.
-Parts derived from the JSON parser in the Ponyo library by Phil Eaton.
+Parts based on the JSON parser in the Ponyo library by Phil Eaton.
 
 MIT/X11 licence. See the file COPYING for details.

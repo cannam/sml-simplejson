@@ -22,8 +22,34 @@
      float type (common but not guaranteed in SML) then we're pretty
      standard for a JSON parser
 
-   Some of this is derived from the JSON parser in the Ponyo library
-   by Phil Eaton.
+   Some of this is based on the JSON parser in the Ponyo library by
+   Phil Eaton.
+
+   Copyright 2017 Chris Cannam.
+
+   Permission is hereby granted, free of charge, to any person
+   obtaining a copy of this software and associated documentation
+   files (the "Software"), to deal in the Software without
+   restriction, including without limitation the rights to use, copy,
+   modify, merge, publish, distribute, sublicense, and/or sell copies
+   of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be
+   included in all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR
+   ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+   CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+   Except as contained in this notice, the names of Chris Cannam and
+   Particular Programs Ltd shall not be used in advertising or
+   otherwise to promote the sale, use or other dealings in this
+   Software without prior written authorization.
 *)
 
 signature JSON = sig
@@ -80,7 +106,7 @@ structure Json :> JSON = struct
                     | COMMA => ","
     end
 
-    fun bmpToUtf8 cp =  (* convert single codepoint in BMP to utf8 chars *)
+    fun bmpToUtf8 cp =  (* convert a codepoint in Unicode BMP to utf8 bytes *)
         let open Word
 	    infix 6 orb andb >>
         in
