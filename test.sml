@@ -12,7 +12,7 @@ fun contents filename =
         val contents = read_all stream []
         val _ = TextIO.closeIn stream
     in
-        String.concatWith "\\n" contents
+        String.concat contents
     end
 
 fun processFile filename =

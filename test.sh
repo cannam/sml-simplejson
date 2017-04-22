@@ -12,14 +12,19 @@ for testfile in testfiles/test_parsing/*.json ; do
     
     case $base in
 	y_*) if [ -n "$output" ]
-	     then pass=$(($pass + 1)); echo "--- PASS: $base"
-	     else fail=$(($fail + 1)); echo "*** FAIL: $base"
+	     then pass=$(($pass + 1))
+		  echo "--- pass: $base"
+	     else fail=$(($fail + 1))
+		  echo "*** FAIL: $base"
 	     fi ;;
 	n_*) if [ -z "$output" ]
-	     then pass=$(($pass + 1)); echo "--- PASS: $base"
-	     else fail=$(($fail + 1)); echo "*** FAIL: $base"
+	     then pass=$(($pass + 1))
+		  echo "--- pass: $base"
+	     else fail=$(($fail + 1))
+		  echo "Output was: $output"
+		  echo "*** FAIL: $base"
 	     fi ;;
-	i_*) ;;
+	i_*) echo "- ignore: $base" ;;
     esac
     
 done
