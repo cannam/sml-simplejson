@@ -130,12 +130,14 @@ structure Json :> JSON = struct
                                            Char.toString x)
                 end
               | lexString' pos text NORMAL (#"\\" :: #"u" ::a::b::c::d:: xs) =
-                (case Word.fromString ("0wx" ^ (implode [a,b,c,d])) of
-                     SOME w => (let val utf = rev (bmpToUtf8 w) in
-                                    lexString' (pos + 6) (utf @ text) NORMAL xs
-                                end
-                                handle Fail err => error pos err)
-                   | NONE => error pos "Invalid Unicode BMP escape sequence")
+                if List.all Char.isHexDigit [a,b,c,d]
+                then case Word.fromString ("0wx" ^ (implode [a,b,c,d])) of
+                         SOME w => (let val utf = rev (bmpToUtf8 w) in
+                                        lexString' (pos + 6) (utf @ text) NORMAL xs
+                                    end
+                                    handle Fail err => error pos err)
+                       | NONE => error pos "Invalid Unicode BMP escape sequence"
+                else error pos "Invalid Unicode BMP escape sequence"
               | lexString' pos text NORMAL (x :: xs) =
                 if Char.ord x < 0x20
                 then error pos "Invalid unescaped control character"
