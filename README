@@ -1,0 +1,31 @@
+
+Simple Standard ML JSON parser
+==============================
+
+An RFC-compliant minimal JSON parser with no dependency on anything
+outside the Basis library. Also includes a simple serialiser.
+
+Parser notes:
+
+ * Complies with RFC 7159, The JavaScript Object Notation (JSON)
+   Data Interchange Format
+
+ * Passes all of the JSONTestSuite parser accept/reject tests that
+   exist at the time of writing, as listed in "Parsing JSON is a
+   Minefield" (http://seriot.ch/parsing_json.php)
+ 
+ * Parses JSON from string objects, explodes strings, parses in two
+   passes: therefore not suitable for large input files
+
+ * Only supports UTF-8 input, not UTF-16 or UTF-32. Doesn't check
+   that JSON strings are valid UTF-8 -- the caller must do that --
+   but does handle \u escapes
+
+ * Converts all numbers to type "real". If that is a 64-bit IEEE
+   float type (common but not guaranteed in SML) then we're pretty
+   standard for a JSON parser
+
+Copyright 2017 Chris Cannam.
+Parts derived from the JSON parser in the Ponyo library by Phil Eaton.
+
+MIT/X11 licence. See the file COPYING for details.

@@ -1,23 +1,29 @@
-(*
-   An almost-RFC-compliant minimal JSON parser/serialiser with no
-   dependency on anything outside the Basis library.
 
-   Notes:
+(* An RFC-compliant minimal JSON parser with no dependency on anything
+   outside the Basis library. Also includes a simple serialiser.
 
-   * Not suitable for large input files
+   Parser notes:
 
-   * We only support UTF-8 input, but we don't check that JSON strings
-     contain valid UTF-8.
+   * Complies with RFC 7159, The JavaScript Object Notation (JSON)
+     Data Interchange Format
 
-   * We convert all numbers to type "real". If that is a 64-bit IEEE
-     float type (not guaranteed in SML) then we're pretty standard
-     for a JSON parser.
+   * Passes all of the JSONTestSuite parser accept/reject tests that
+     exist at the time of writing, as listed in "Parsing JSON is a
+     Minefield" (http://seriot.ch/parsing_json.php)
+ 
+   * Parses JSON from string objects, explodes strings, parses in two
+     passes: therefore not suitable for large input files
 
-   A lot of this is based on the JSON parser in the Ponyo library by
-   Phil Eaton.
+   * Only supports UTF-8 input, not UTF-16 or UTF-32. Doesn't check
+     that JSON strings are valid UTF-8 -- the caller must do that --
+     but does handle \u escapes
 
-   Reference: RFC 7159, The JavaScript Object Notation (JSON) Data
-   Interchange Format.
+   * Converts all numbers to type "real". If that is a 64-bit IEEE
+     float type (common but not guaranteed in SML) then we're pretty
+     standard for a JSON parser
+
+   Some of this is derived from the JSON parser in the Ponyo library
+   by Phil Eaton.
 *)
 
 signature JSON = sig
@@ -154,10 +160,11 @@ structure Json :> JSON = struct
         end
 
     and lexNumber firstChar pos acc cc =
-        let val valid = explode ".+-eE"
+        let val valid = explode ".+-e"
             fun lexNumber' pos digits [] = (rev digits, [], pos)
               | lexNumber' pos digits (x :: xs) =
-                if Char.isDigit x orelse List.exists (fn c => x = c) valid
+                if x = #"E" then lexNumber' (pos + 1) (#"e" :: digits) xs
+                else if Char.isDigit x orelse List.exists (fn c => x = c) valid
                 then lexNumber' (pos + 1) (x :: digits) xs
                 else (rev digits, x :: xs, pos)
             val (digits, rest, newpos) = lexNumber' pos [] (firstChar :: cc)
@@ -190,9 +197,46 @@ structure Json :> JSON = struct
       | show (tok :: _) = T.toString tok
 
     fun parseNumber digits =
-        case Real.fromString (implode digits) of
-            NONE => ERROR "Invalid number"
-          | SOME r => OK r
+        (* Note lexNumber already case-insensitised the E for us *)
+        let open Char
+
+            fun chkExpNumber [] = false
+              | chkExpNumber (c :: []) = isDigit c
+              | chkExpNumber (c :: rest) = isDigit c andalso chkExpNumber rest
+
+            fun chkExp [] = false
+              | chkExp (#"+" :: rest) = chkExpNumber rest
+              | chkExp (#"-" :: rest) = chkExpNumber rest
+              | chkExp cc = chkExpNumber cc
+
+            fun chkAfterDotAndDigit [] = true
+              | chkAfterDotAndDigit (c :: rest) =
+                (isDigit c andalso chkAfterDotAndDigit rest) orelse
+                (c = #"e" andalso chkExp rest)
+
+            fun chkAfterDot [] = false
+              | chkAfterDot (c :: rest) =
+                isDigit c andalso chkAfterDotAndDigit rest
+
+            fun chkPos [] = false
+              | chkPos (#"0" :: []) = true
+              | chkPos (#"0" :: #"." :: rest) = chkAfterDot rest
+              | chkPos (#"0" :: #"e" :: rest) = chkExp rest
+              | chkPos (#"0" :: rest) = false
+              | chkPos (c :: []) = isDigit c
+              | chkPos (c :: #"." :: rest) = isDigit c andalso chkAfterDot rest
+              | chkPos (c :: #"e" :: rest) = chkExp rest
+              | chkPos (c :: rest) = isDigit c andalso chkPos rest
+                    
+            fun chkNumber (#"-" :: rest) = chkPos rest
+              | chkNumber digits = chkPos digits
+        in
+            if chkNumber digits
+            then case Real.fromString (implode digits) of
+                     NONE => ERROR "Invalid number"
+                   | SOME r => OK r
+            else ERROR "Number out of range"
+        end
                                      
     fun parseObject (T.CURLY_R :: xs) = OK (OBJECT [], xs)
       | parseObject tokens =
