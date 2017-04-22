@@ -2,9 +2,8 @@
 Simple Standard ML JSON parser
 ==============================
 
-An RFC-compliant minimal JSON parser in one SML file with no
-dependency on anything outside the Basis library. Also includes a
-simple serialiser.
+An RFC-compliant JSON parser in one SML file with no dependency on
+anything outside the Basis library. Also includes a simple serialiser.
 
 Tested with MLton, Poly/ML, and SML/NJ.
 
