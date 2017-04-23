@@ -16,8 +16,8 @@ Parser notes:
    exist at the time of writing, as listed in "Parsing JSON is a
    Minefield" (http://seriot.ch/parsing_json.php)
  
- * Parses JSON from string objects, explodes strings, parses in two
-   passes: therefore not suitable for large input files
+ * Two-pass parser using naive exploded strings, therefore not very
+   fast and not suitable for large input files
 
  * Only supports UTF-8 input, not UTF-16 or UTF-32. Doesn't check
    that JSON strings are valid UTF-8 -- the caller must do that --
