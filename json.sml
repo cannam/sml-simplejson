@@ -284,7 +284,7 @@ structure Json :> JSON = struct
                 case parsePair tokens of
                     ERROR e => ERROR e
                   | OK (pair, T.COMMA :: xs) => parseObject' (pair :: acc) xs
-                  | OK (pair, T.CURLY_R :: xs) => OK (OBJECT (pair :: acc), xs)
+                  | OK (pair, T.CURLY_R :: xs) => OK (OBJECT (rev (pair :: acc)), xs)
                   | OK (_, _) => ERROR "Expected , or } after object element"
         in
             parseObject' [] tokens
