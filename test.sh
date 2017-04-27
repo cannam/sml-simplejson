@@ -73,6 +73,40 @@ else
     rm $m_out.od $m_collapsed.od
 fi
 
+# And if that is read in and dumped out, we get the same again
+
+./jsonparse $m_out > ${m_out}_
+if cmp -s $m_out ${m_out}_ ; then
+    pass=$(($pass + 1))
+    echo "--- pass: re-parse output gives same result again"
+    rm ${m_out}_
+else
+    fail=$(($fail + 1))
+    echo "*** FAIL: re-parse output differs"
+fi    
+
+# Repeat that test, but with the -i option (indent)
+
+./jsonparse -i $m_in > $m_out
+
+reread=$(./jsonparse $m_out)
+if [ -n "$reread" ]
+then pass=$(($pass + 1))
+     echo "--- pass: merged file conversion with indentation can be re-read"
+else fail=$(($fail + 1))
+     echo "*** FAIL: merged file conversion with indentation cannot be re-read"
+fi
+
+./jsonparse -i $m_out > ${m_out}_
+if cmp -s $m_out ${m_out}_ ; then
+    pass=$(($pass + 1))
+    echo "--- pass: re-parse output with indentation gives same result again"
+    rm ${m_out}_
+else
+    fail=$(($fail + 1))
+    echo "*** FAIL: re-parse output with indentation differs"
+fi    
+
 echo
 echo "Passed: $pass"
 echo "Failed: $fail"
