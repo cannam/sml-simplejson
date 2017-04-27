@@ -26,7 +26,13 @@ fun processFile filename =
     end
 
 fun usage () =
-    (TextIO.output (TextIO.stdErr, "Usage: test file.json\n");
+    (TextIO.output
+         (TextIO.stdErr,
+          "\nUsage: " ^ (CommandLine.name ()) ^
+          " [-i] file.json\n\n" ^
+          "Parse the named JSON file and serialise it again to stdout.\n\n" ^
+          "  -i   Indent the output for readability by humans. The default\n" ^
+          "       is to serialise it in a single line.\n\n");
      raise Fail "Incorrect arguments specified")
 
 fun handleArgs args =
