@@ -15,19 +15,27 @@ fun contents filename =
         String.concat contents
     end
 
+val serialise = ref Json.serialise
+        
 fun processFile filename =
-    let open Json
-        val input = contents filename
+    let val input = contents filename
     in
-        case parse input of
-            ERROR e => TextIO.output (TextIO.stdErr, "Error: " ^ e ^ "\n")
-          | OK json => print (serialise json ^ "\n")
+        case Json.parse input of
+            Json.ERROR e => TextIO.output (TextIO.stdErr, "Error: " ^ e ^ "\n")
+          | Json.OK json => print (!serialise json ^ "\n")
     end
+
+fun usage () =
+    (TextIO.output (TextIO.stdErr, "Usage: test file.json\n");
+     raise Fail "Incorrect arguments specified")
+
+fun handleArgs args =
+    case args of
+        "-i"::rest => (serialise := Json.serialiseIndented; handleArgs rest)
+      | [infile] => processFile infile
+      | _ => usage ()
         
 fun main () =
-    case CommandLine.arguments () of
-        [infile] => processFile infile
-      | _ => (TextIO.output (TextIO.stdErr, "Usage: test file.json\n");
-              raise Fail "Incorrect arguments specified")
+    handleArgs (CommandLine.arguments ())
 
                  
