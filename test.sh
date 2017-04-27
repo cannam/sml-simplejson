@@ -13,7 +13,7 @@ fail=0
 
 for testfile in testfiles/test_parsing/*.json testfiles/merged/merged-in.json ; do
 
-    output=$(./test "$testfile")
+    output=$(./jsonparse "$testfile")
     base=$(basename $testfile)
     
     case $base in
@@ -43,9 +43,9 @@ m_out=testfiles/merged/merged-out.json
 m_expected=testfiles/merged/merged-expected.json
 m_collapsed=testfiles/merged/expected-collapsed.json
 
-./test $m_in > $m_out
+./jsonparse $m_in > $m_out
 
-reread=$(./test $m_out)
+reread=$(./jsonparse $m_out)
 if [ -n "$reread" ]
 then pass=$(($pass + 1))
      echo "--- pass: merged file conversion can be re-read"
