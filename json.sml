@@ -1,7 +1,14 @@
 
-(* An RFC-compliant JSON parser in one SML file with no dependency 
+(* Simple Standard ML JSON parser
+   ==============================
+
+   https://bitbucket.org/cannam/sml-simplejson
+
+   An RFC-compliant JSON parser in one SML file with no dependency 
    on anything outside the Basis library. Also includes a simple
    serialiser.
+
+   Tested with MLton, Poly/ML, and SML/NJ compilers.
 
    Parser notes:
 
@@ -12,8 +19,8 @@
      exist at the time of writing, as listed in "Parsing JSON is a
      Minefield" (http://seriot.ch/parsing_json.php)
  
-   * Two-pass parser using naive exploded strings, therefore not very
-     fast and not suitable for large input files
+   * Two-pass parser using naive exploded strings, therefore not
+     particularly fast and not suitable for large input files
 
    * Only supports UTF-8 input, not UTF-16 or UTF-32. Doesn't check
      that JSON strings are valid UTF-8 -- the caller must do that --
@@ -23,10 +30,8 @@
      float type (common but not guaranteed in SML) then we're pretty
      standard for a JSON parser
 
-   Some of this is based on the JSON parser in the Ponyo library by
-   Phil Eaton.
-
    Copyright 2017 Chris Cannam.
+   Parts based on the JSON parser in the Ponyo library by Phil Eaton.
 
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation
@@ -284,8 +289,10 @@ structure Json :> JSON = struct
               | parseObject' acc tokens =
                 case parsePair tokens of
                     ERROR e => ERROR e
-                  | OK (pair, T.COMMA :: xs) => parseObject' (pair :: acc) xs
-                  | OK (pair, T.CURLY_R :: xs) => OK (OBJECT (rev (pair :: acc)), xs)
+                  | OK (pair, T.COMMA :: xs) =>
+                    parseObject' (pair :: acc) xs
+                  | OK (pair, T.CURLY_R :: xs) =>
+                    OK (OBJECT (rev (pair :: acc)), xs)
                   | OK (_, _) => ERROR "Expected , or } after object element"
         in
             parseObject' [] tokens

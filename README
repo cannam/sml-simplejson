@@ -2,10 +2,13 @@
 Simple Standard ML JSON parser
 ==============================
 
-An RFC-compliant JSON parser in one SML file with no dependency on
-anything outside the Basis library. Also includes a simple serialiser.
+https://bitbucket.org/cannam/sml-simplejson
 
-Tested with MLton, Poly/ML, and SML/NJ.
+An RFC-compliant JSON parser in one SML file (json.sml) with no
+dependency on anything outside the Basis library. Also includes a
+simple serialiser.
+
+Tested with MLton, Poly/ML, and SML/NJ compilers.
 
 Parser notes:
 
@@ -16,8 +19,8 @@ Parser notes:
    exist at the time of writing, as listed in "Parsing JSON is a
    Minefield" (http://seriot.ch/parsing_json.php)
  
- * Two-pass parser using naive exploded strings, therefore not very
-   fast and not suitable for large input files
+ * Two-pass parser using naive exploded strings, therefore not
+   particularly fast and not suitable for large input files
 
  * Only supports UTF-8 input, not UTF-16 or UTF-32. Doesn't check
    that JSON strings are valid UTF-8 -- the caller must do that --
