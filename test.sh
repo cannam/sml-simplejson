@@ -13,7 +13,7 @@ fail=0
 
 for testfile in testfiles/test_parsing/*.json testfiles/merged/merged-in.json ; do
 
-    output=$(./jsonparse "$testfile")
+    output=$(./jsonparse "$testfile" || true)
     base=$(basename $testfile)
     
     case $base in

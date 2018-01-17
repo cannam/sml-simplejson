@@ -21,8 +21,12 @@ fun processFile filename =
     let val input = contents filename
     in
         case Json.parse input of
-            Json.ERROR e => TextIO.output (TextIO.stdErr, "Error: " ^ e ^ "\n")
-          | Json.OK json => print (!serialise json ^ "\n")
+            Json.ERROR e =>
+            (TextIO.output (TextIO.stdErr, "Error: " ^ e ^ "\n");
+             OS.Process.exit OS.Process.failure)
+          | Json.OK json =>
+            (print (!serialise json ^ "\n");
+             OS.Process.exit OS.Process.success)
     end
 
 fun usage () =
@@ -33,7 +37,7 @@ fun usage () =
           "Parse the named JSON file and serialise it again to stdout.\n\n" ^
           "  -i   Indent the output for readability by humans. The default\n" ^
           "       is to serialise it in a single line.\n\n");
-     raise Fail "Incorrect arguments specified")
+     OS.Process.exit OS.Process.failure)
 
 fun handleArgs args =
     case args of
