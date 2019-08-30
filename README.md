@@ -2,7 +2,7 @@
 Simple Standard ML JSON parser
 ==============================
 
-https://bitbucket.org/cannam/sml-simplejson
+https://hg.sr.ht/~cannam/sml-simplejson
 
 An RFC-compliant JSON parser in one SML file (json.sml) with no
 dependency on anything outside the Basis library. Also includes a
