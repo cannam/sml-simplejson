@@ -2,7 +2,7 @@
 (* Simple Standard ML JSON parser
    ==============================
 
-   https://bitbucket.org/cannam/sml-simplejson
+   https://hg.sr.ht/~cannam/sml-simplejson
 
    An RFC-compliant JSON parser in one SML file with no dependency 
    on anything outside the Basis library. Also includes a simple
@@ -29,6 +29,11 @@
    * Converts all numbers to type "real". If that is a 64-bit IEEE
      float type (common but not guaranteed in SML) then we're pretty
      standard for a JSON parser
+
+   * For simplicity this implementation returns object fields in the
+     order in which they appear in the input, without checking for
+     duplicates. But JSON object fields are unordered, so callers
+     should take care not to accidentally rely on this
 
    Copyright 2017 Chris Cannam.
    Parts based on the JSON parser in the Ponyo library by Phil Eaton.

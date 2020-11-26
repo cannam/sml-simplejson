@@ -30,6 +30,11 @@ Parser notes:
    float type (common but not guaranteed in SML) then we're pretty
    standard for a JSON parser
 
+ * For simplicity this implementation returns object fields in the
+   order in which they appear in the input, without checking for
+   duplicates. But JSON object fields are unordered, so callers
+   should take care not to accidentally rely on this
+
 Copyright 2017 Chris Cannam.
 Parts based on the JSON parser in the Ponyo library by Phil Eaton.
 
